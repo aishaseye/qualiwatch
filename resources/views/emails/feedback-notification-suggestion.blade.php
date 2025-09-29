@@ -1,7 +1,7 @@
 @component('emails.layout')
     @slot('title', '💡 Nouvelle Suggestion Reçue')
     @slot('company_name', $company->name ?? 'QualyWatch')
-    @slot('header_subtitle', 'Idée d\'amélioration')
+    @slot('header_subtitle', '')
     @slot('reference', $feedback->reference ?? $feedback->id ?? '')
 
     <p>Bonjour <strong>{{ $company->name ?? 'Manager' }}</strong>,</p>

@@ -10,6 +10,7 @@ use App\Models\RewardClaim;
 use App\Models\Client;
 use App\Models\User;
 use App\Models\Company;
+use App\Services\WhatsAppService;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
@@ -131,8 +132,19 @@ class NotificationService
     {
         try {
             // SEULEMENT envoyer au client, PAS au manager
-            if (!$feedback->client || !$feedback->client->email) {
-                Log::warning('Cannot send treated notification: no client email', [
+            if (!$feedback->client) {
+                Log::warning('Cannot send treated notification: no client found', [
+                    'feedback_id' => $feedback->id
+                ]);
+                return;
+            }
+
+            // Vérifier si on a au moins un email ou un téléphone
+            $hasEmail = $feedback->client->email;
+            $hasPhone = $feedback->client->phone;
+
+            if (!$hasEmail && !$hasPhone) {
+                Log::warning('Cannot send treated notification: no client email or phone', [
                     'feedback_id' => $feedback->id
                 ]);
                 return;
@@ -142,23 +154,43 @@ class NotificationService
             $token = $feedback->withoutEvents(function () use ($feedback) {
                 return $feedback->generateValidationToken();
             });
-            
+
             // Récupérer les IDs des statuts resolved et not_resolved
             $resolvedStatus = \App\Models\FeedbackStatus::getResolvedStatus();
             $notResolvedStatus = \App\Models\FeedbackStatus::getNotResolvedStatus();
-            
+
             // Créer les URLs de validation directes avec les statuts
             $resolvedUrl = config('app.frontend_url') . '/api/validate/' . $token . '?status_id=' . $resolvedStatus->id;
             $notResolvedUrl = config('app.frontend_url') . '/api/validate/' . $token . '?status_id=' . $notResolvedStatus->id;
 
-            // Envoyer email de validation avec deux boutons
-            $emailSent = $this->sendTwoButtonValidationRequest($feedback, $resolvedUrl, $notResolvedUrl);
+            // Envoyer email de validation avec deux boutons (si email disponible)
+            $emailSent = false;
+            if ($hasEmail) {
+                $emailSent = $this->sendTwoButtonValidationRequest($feedback, $resolvedUrl, $notResolvedUrl);
+            }
 
-            if ($emailSent) {
-                Log::info('Treated notification with two-button validation sent to client', [
+            // Envoyer message WhatsApp (si téléphone disponible)
+            $whatsappSent = false;
+            if ($hasPhone) {
+                $whatsappService = app(WhatsAppService::class);
+                $whatsappSent = $whatsappService->sendTreatedFeedbackMessage($feedback);
+            }
+
+            // Logger les résultats
+            if ($emailSent || $whatsappSent) {
+                Log::info('Treated notification sent to client', [
                     'feedback_id' => $feedback->id,
                     'client_email' => $feedback->client->email,
+                    'client_phone' => $feedback->client->phone,
+                    'email_sent' => $emailSent,
+                    'whatsapp_sent' => $whatsappSent,
                     'validation_token' => $token,
+                ]);
+            } else {
+                Log::warning('Failed to send treated notification via any channel', [
+                    'feedback_id' => $feedback->id,
+                    'has_email' => $hasEmail,
+                    'has_phone' => $hasPhone,
                 ]);
             }
 

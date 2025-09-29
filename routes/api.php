@@ -21,6 +21,7 @@ use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\FeedbackAlertController;
 use App\Http\Controllers\ReferenceDataController;
 use App\Http\Controllers\TeamController;
+use App\Http\Controllers\WhatsAppTestController;
 
 /*
 |--------------------------------------------------------------------------
@@ -726,6 +727,54 @@ Route::middleware(['auth:sanctum', 'super_admin'])->prefix('super-admin')->group
 
 // Import
 use App\Mail\TestEmail;
+
+// Routes de test WhatsApp (développement uniquement)
+Route::middleware(['auth:sanctum'])->prefix('whatsapp-test')->group(function () {
+    Route::get('status', [WhatsAppTestController::class, 'checkStatus']);
+    Route::get('connection', [WhatsAppTestController::class, 'testConnection']);
+    Route::post('feedback/{feedback_id}', [WhatsAppTestController::class, 'testFeedbackMessage']);
+    Route::post('sample', [WhatsAppTestController::class, 'testWithSampleData']);
+    Route::get('debug', [WhatsAppTestController::class, 'debugInfo']);
+});
+
+// Route de test pour prévisualiser le nouveau template d'escalation
+Route::get('test/escalation-preview', function () {
+    if (config('app.env') !== 'local') {
+        return response()->json(['error' => 'Only available in development'], 403);
+    }
+
+    // Données de test pour le template d'escalation
+    $testData = [
+        'escalation' => (object) [
+            'escalation_level' => 2,
+            'trigger_reason' => 'sla_breach',
+            'escalated_at' => now()
+        ],
+        'user' => (object) [
+            'full_name' => 'Jean Directeur'
+        ],
+        'feedback' => (object) [
+            'reference' => 'ESC-2025-001',
+            'rating' => 2,
+            'content' => 'Service très décevant, temps d\'attente inacceptable et personnel peu aimable.',
+            'created_at' => now()->subHours(2),
+            'feedbackType' => (object) ['name' => 'Incident']
+        ],
+        'company' => (object) [
+            'name' => 'Aisha SARL'
+        ],
+        'client' => (object) [
+            'name' => 'Client Mécontent',
+            'email' => 'client@example.com',
+            'phone' => '+33123456789'
+        ],
+        'urgencyColor' => '#EF4444',
+        'urgencyLabel' => 'ESCALADE DIRECTION',
+        'actionUrl' => 'http://localhost:3000/dashboard/feedback/123'
+    ];
+
+    return view('emails.escalation-notification-v2', $testData);
+});
 
 // Route de test pour email de remerciement suggestion
 Route::get('test/send-suggestion-email', function (Request $request) {

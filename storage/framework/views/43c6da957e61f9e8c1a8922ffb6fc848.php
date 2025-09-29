@@ -1,7 +1,7 @@
 <?php $__env->startComponent('emails.layout'); ?>
     <?php $__env->slot('title', '💡 Nouvelle Suggestion Reçue'); ?>
     <?php $__env->slot('company_name', $company->name ?? 'QualyWatch'); ?>
-    <?php $__env->slot('header_subtitle', 'Idée d\'amélioration'); ?>
+    <?php $__env->slot('header_subtitle', ''); ?>
     <?php $__env->slot('reference', $feedback->reference ?? $feedback->id ?? ''); ?>
 
     <p>Bonjour <strong><?php echo e($company->name ?? 'Manager'); ?></strong>,</p>

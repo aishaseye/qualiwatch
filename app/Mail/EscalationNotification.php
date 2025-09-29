@@ -53,7 +53,7 @@ class EscalationNotification extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.escalation-notification',
+            view: 'emails.escalation-notification-v2',
             with: [
                 'escalation' => $this->escalation,
                 'user' => $this->user,

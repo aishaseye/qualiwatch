@@ -31,8 +31,8 @@ class FeedbackNotificationMail extends Mailable
     public function envelope(): Envelope
     {
         $subject = match($this->feedback->type) {
-            'suggestion' => "💡 Nouvelle suggestion reçue - {$this->company->name}",
-            'negatif' => "🚨 Feedback négatif reçu - {$this->company->name}",
+            'suggestion' => " Nouvelle suggestion reçue - {$this->company->name}",
+            'negatif' => " Feedback négatif reçu - {$this->company->name}",
             'incident' => "⚠️ Incident signalé - {$this->company->name}",
             default => "📝 Nouveau feedback - {$this->company->name}"
         };
